@@ -4,7 +4,7 @@ import scala.language.experimental.macros
 import scala.reflect.macros.Context
 import scala.annotation.StaticAnnotation
 
-package object phases {
+package phases {
   class identity extends StaticAnnotation {
     def macroTransform(annottees: Any*): Any = macro identity.impl
   }
