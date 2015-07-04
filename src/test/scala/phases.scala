@@ -6,34 +6,34 @@ import org.scalatest.FlatSpec
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.Matchers
 
-import io.github.jpivarski.phases._
+import io.github.jpivarski.phases
 import test.scala._
 
 @RunWith(classOf[JUnitRunner])
 class PhasesSuite extends FlatSpec with Matchers {
-  @stateMachine
-  class Engine(@phase(Startup) config: String, @phase(Run) data: Int) {
-    val always = 12
+  @phases.declare(Startup -> Run)
+  class Engine(always: Int, @Startup config: String, @Run data: Int) {
+    val myAlways = always
 
-    @phase(Startup, Run)
-    val always2 = 12
+    @Startup @Run
+    val myAlways2 = always
 
-    @phase(Startup)
+    @Startup
     val myConfig = config
 
-    @phase(Run)
+    @Run
     val myData: Int = data
 
-    @phase(Run)
+    @Run
     def whatsMyData(query: String): Int = myData
 
-    // @transition(Startup, Run)
-    // def startRun(data: Int): Engine.Run = new Engine.Run(data)
+    // class Startup extends Engine(always, config, data)
+    // class Run extends Engine(always, config, data)
   }
 
   "test" must "do something" in {
     // val engine = new Engine.Startup
-    val engine = new Engine("hello", 3)
+    val engine = new Engine(12, "hello", 3)
     println(engine.myConfig)
     println(engine.myData)
     println(engine.whatsMyData("hey"))

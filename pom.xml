@@ -45,6 +45,10 @@
         <artifactId>scala-maven-plugin</artifactId>
         <version>3.2.1</version>
         <configuration>
+          <args>
+            <arg>-deprecation</arg>
+            <arg>-feature</arg>
+          </args>
           <recompileMode>incremental</recompileMode>
           <useZincServer>true</useZincServer>
           <compilerPlugins>
