@@ -11,17 +11,31 @@ import test.scala._
 
 @RunWith(classOf[JUnitRunner])
 class PhasesSuite extends FlatSpec with Matchers {
+  @stateMachine
+  class Engine(@phase(Startup) config: String, @phase(Run) data: Int) {
+    val always = 12
+
+    @phase(Startup, Run)
+    val always2 = 12
+
+    @phase(Startup)
+    val myConfig = config
+
+    @phase(Run)
+    val myData: Int = data
+
+    @phase(Run)
+    def whatsMyData(query: String): Int = myData
+
+    // @transition(Startup, Run)
+    // def startRun(data: Int): Engine.Run = new Engine.Run(data)
+  }
+
   "test" must "do something" in {
-    println("runtime")
-
-    @identity class C
-
-    @identity class D
-    object D
-
-    class E
-    @identity object E
-
-    def twice[@identity T](@identity x: Int) = x * 2
+    // val engine = new Engine.Startup
+    val engine = new Engine("hello", 3)
+    println(engine.myConfig)
+    println(engine.myData)
+    println(engine.whatsMyData("hey"))
   }
 }
