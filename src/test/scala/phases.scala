@@ -12,6 +12,15 @@ import test.scala._
 @RunWith(classOf[JUnitRunner])
 class PhasesSuite extends FlatSpec with Matchers {
   "test" must "do something" in {
-    hello()
+    @identity class C
+
+    @identity class D
+    object D
+
+    class E
+    @identity object E
+
+    def twice[@identity T](@identity x: Int) = x * 2
+
   }
 }
