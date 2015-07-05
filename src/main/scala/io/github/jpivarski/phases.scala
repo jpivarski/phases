@@ -13,13 +13,16 @@ package object phases {
   def declare_impl(c: Context)(annottees: c.Expr[Any]*): c.Expr[Any] = {
     import c.universe._
 
-    val classDef =
-      annottees.map(_.tree).toList match {
-        case (x: ClassDef) :: Nil => x
-        case _ =>
-          c.error(c.enclosingPosition, "@phases.declare can only be used on classes")
-          throw new Error
-      }
+    val companionPair = annottees.map(_.tree).toList
+    val classDefList = companionPair collect {case x: ClassDef => x}
+
+    if (classDefList.size != 1)
+      c.error(c.enclosingPosition, "@phases.declare can only be used on classes")
+    val classDef = classDefList.head
+    val ClassDef(_, className, _, _) = classDef
+
+    val companionObjectDef = companionPair.collect({case x: ModuleDef => x}).
+      headOption.getOrElse(q"object ${newTermName(className.toString)}")
 
     val transitions =
       c.prefix.tree match {
@@ -71,17 +74,28 @@ package object phases {
       }
 
       override def transform(tree: Tree): Tree = tree match {
-        case ClassDef(mods, name, tparams, Template(parents, self, body)) => ClassDef(
-          transformModifiers(mods),
-          phaseToKeep match {
-            case None => name
-            case Some(phase) => newTypeName(phase)
-          },
-          transformTypeDefs(tparams),
-          Template(phaseToKeep match {
-            case None => parents
-            case Some(phase) => List(Ident(name))
-          }, transformValDef(self), body map {transform(_)} filter {_ != EmptyTree}))
+        case ClassDef(mods, name, tparams, Template(parents, self, body)) =>
+          // basic transform
+          val transformedBody = body map {transform(_)} filter {_ != EmptyTree}
+
+          // constructor code other than specialized val/def declarations should only be in the general class
+          val transformedBody2 =
+            if (phaseToKeep != None)
+              transformedBody collect {case x: ValDef => x; case x: DefDef => x}
+            else
+              transformedBody
+
+          ClassDef(
+            transformModifiers(mods),
+            phaseToKeep match {
+              case None => name
+              case Some(phase) => newTypeName(phase)
+            },
+            transformTypeDefs(tparams),
+            Template(phaseToKeep match {
+              case None => parents
+              case Some(phase) => List(Ident(name))
+            }, transformValDef(self), transformedBody2))
 
         case x: ValDef => transformValDef(x, phaseToKeep == None, phaseToKeep != None)
 
@@ -118,36 +132,13 @@ package object phases {
     val superclassDef = (new ClassDefFilterer(None)).transform(classDef)
     val phaseDefs = phaseNames map {n => (new ClassDefFilterer(Some(n))).transform(classDef)}
 
-    val superclassDefWithPhases = {
-      val ClassDef(mods, name, tparams, Template(parents, self, body)) = superclassDef
-      ClassDef(mods, name, tparams, Template(parents, self, body ++ phaseDefs))
+    val companionWithSubclasses = {
+      val ModuleDef(mods, name, Template(parents, self, body)) = companionObjectDef
+      ModuleDef(mods, name, Template(parents, self, body ++ phaseDefs))
     }
 
-    println(superclassDefWithPhases)
+    println(companionWithSubclasses)
 
-    c.Expr[Any](Block(List(superclassDefWithPhases), Literal(Constant(()))))
+    c.Expr[Any](Block(List(superclassDef, companionWithSubclasses), Literal(Constant(()))))
   }
-
-  // def transition(from: Any, to: Any) = macro transition_impl
-  // def transition_impl(c: Context)(from: Any, to: Any): c.Expr[Any] = {
-  //   import c.universe._
-  //   println(from, to)
-  //   c.Expr[Any](Block(List(), Literal(Constant())))
-  // }
-
-  // class in extends StaticAnnotation {
-  //   def macroTransform(annottees: Any*): Any = macro in.impl
-  // }
-  // object in {
-  //   def impl(c: Context)(annottees: c.Expr[Any]*): c.Expr[Any] = {
-  //     import c.universe._
-  //     val expandees =
-  //       annottees.map(_.tree).toList match {
-  //         case (_: ValDef) :: (rest @ (_ :: _)) => rest
-  //         case (_: TypeDef) :: (rest @ (_ :: _)) => rest
-  //         case x => x
-  //       }
-  //     c.Expr[Any](Block(expandees, Literal(Constant(()))))
-  //   }
-  // }
 }
