@@ -11,8 +11,10 @@ import test.scala._
 
 @RunWith(classOf[JUnitRunner])
 class PhasesSuite extends FlatSpec with Matchers {
+  class Outer(val blah: Int)
+
   @phases.declare(Startup -> Run)
-  class Engine(always: Int, @Startup config: String, @Run data: Int, blah: Int) {
+  class Engine(always: Int, @Startup config: String, @Run data: Int, blah: Int) extends Outer(blah + 1) {
     val myAlways = always
 
     @Startup @Run

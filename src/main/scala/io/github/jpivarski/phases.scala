@@ -45,48 +45,62 @@ package object phases {
         case Apply(Select(New(x), _), Nil) if (phaseNames contains x.toString) => x.toString
       }: PartialFunction[Tree, String]
 
-      def transform(tree: Tree, isInit: Boolean): Tree = tree match {
-        case ValDef(mods, name, tpt, rhs) =>
-          val phases = mods.annotations collect getPhases
-          val otherAnnotations = mods.annotations filter {!getPhases.isDefinedAt(_)}
+      def transformValDef(valDef: ValDef, includeGeneral: Boolean, includeSpecific: Boolean): Tree = {
+        val phases = valDef.mods.annotations collect getPhases
+        val otherAnnotations = valDef.mods.annotations filter {!getPhases.isDefinedAt(_)}
+        
+        val isGeneral = (phases.isEmpty  ||  phases.size == phaseNames.size)
+        val isSpecific = phaseToKeep match {
+          case None => false
+          case Some(phase) => (!isGeneral  &&  phases.contains(phase))
+        }
 
-          val modified = ValDef(
-            transformModifiers(Modifiers(mods.flags, mods.privateWithin, otherAnnotations)),
-            name,
-            transform(tpt),
-            transform(rhs))
+        if ((includeGeneral  &&  isGeneral)  ||  (includeSpecific  &&  isSpecific))
+          ValDef(
+            transformModifiers(Modifiers(valDef.mods.flags, valDef.mods.privateWithin, otherAnnotations)),
+            valDef.name,
+            transform(valDef.tpt),
+            transform(valDef.rhs))
+        else
+          EmptyTree
+      }
 
-          val allPhases = (phases.isEmpty  ||  phases.size == phaseNames.size)
-          phaseToKeep match {
-            case None if (allPhases) => modified
-            case Some(phase) if (isInit  &&  (allPhases  ||  phases.contains(phase))) => modified
-            case Some(phase) if (!isInit  &&  !allPhases  &&  phases.contains(phase)) => modified
-            case _ => EmptyTree
-          }
+      def transformInit(tree: Tree, args: List[String]): Tree = tree match {
+        case Block(Apply(fun, _) :: Nil, expr) => transform(Block(Apply(fun, args map {x => Ident(newTermName(x))}) :: Nil, expr))
+        case x => transform(tree)
+      }
+
+      override def transform(tree: Tree): Tree = tree match {
+        case x: ValDef => transformValDef(x, phaseToKeep == None, phaseToKeep != None)
 
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
           val phases = mods.annotations collect getPhases
           val otherAnnotations = mods.annotations filter {!getPhases.isDefinedAt(_)}
-          
-          val modified = DefDef(
-            transformModifiers(Modifiers(mods.flags, mods.privateWithin, otherAnnotations)),
-            name,
-            transformTypeDefs(tparams),
-            vparamss map {_ map {x => transform(x, name.toString == "<init>")} collect {case y: ValDef => y}},
-            transform(tpt),
-            transform(rhs))
+         
+          val transformedVparamss = vparamss map {_ map {x => transformValDef(x, true, phaseToKeep != None)} collect {case y: ValDef => y}}
 
-          val allPhases = (phases.isEmpty  ||  phases.size == phaseNames.size)
-          phaseToKeep match {
-            case None if (allPhases) => modified
-            case Some(phase) if (name.toString == "<init>"  &&  (allPhases  ||  phases.contains(phase))) => modified
-            case _ => EmptyTree
+          val isGeneral = (phases.isEmpty  ||  phases.size == phaseNames.size)
+          val isSpecific = phaseToKeep match {
+            case None => false
+            case Some(phase) => (!isGeneral  &&  phases.contains(phase))
           }
+
+          if (name.toString == "<init>"  ||  (phaseToKeep == None  &&  isGeneral)  ||  (phaseToKeep != None  &&  isSpecific))
+            DefDef(
+              transformModifiers(Modifiers(mods.flags, mods.privateWithin, otherAnnotations)),
+              name,
+              transformTypeDefs(tparams),
+              transformedVparamss,
+              transform(tpt),
+              if (name.toString == "<init>"  &&  phaseToKeep != None)
+                transformInit(rhs, vparamss flatMap {_ map {transformValDef(_, true, false)} collect {case ValDef(_, n, _, _) => n.toString}})
+              else
+                transform(rhs))
+          else
+            EmptyTree
 
         case _ => super.transform(tree)
       }
-
-      override def transform(tree: Tree): Tree = transform(tree, false)
     }
 
     val superclassDef = (new ClassDefFilterer(None)).transform(classDef)
