@@ -71,6 +71,18 @@ package object phases {
       }
 
       override def transform(tree: Tree): Tree = tree match {
+        case ClassDef(mods, name, tparams, Template(parents, self, body)) => ClassDef(
+          transformModifiers(mods),
+          phaseToKeep match {
+            case None => name
+            case Some(phase) => newTypeName(phase)
+          },
+          transformTypeDefs(tparams),
+          Template(phaseToKeep match {
+            case None => parents
+            case Some(phase) => List(Ident(name))
+          }, transformValDef(self), body map {transform(_)} filter {_ != EmptyTree}))
+
         case x: ValDef => transformValDef(x, phaseToKeep == None, phaseToKeep != None)
 
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
@@ -104,17 +116,16 @@ package object phases {
     }
 
     val superclassDef = (new ClassDefFilterer(None)).transform(classDef)
+    val phaseDefs = phaseNames map {n => (new ClassDefFilterer(Some(n))).transform(classDef)}
 
-    println(superclassDef)
-    println()
-
-    val phaseDefs = phaseNames foreach {n =>
-      println(n)
-      println((new ClassDefFilterer(Some(n))).transform(classDef))
-      println()
+    val superclassDefWithPhases = {
+      val ClassDef(mods, name, tparams, Template(parents, self, body)) = superclassDef
+      ClassDef(mods, name, tparams, Template(parents, self, body ++ phaseDefs))
     }
 
-    c.Expr[Any](Block(List(superclassDef), Literal(Constant(()))))
+    println(superclassDefWithPhases)
+
+    c.Expr[Any](Block(List(superclassDefWithPhases), Literal(Constant(()))))
   }
 
   // def transition(from: Any, to: Any) = macro transition_impl

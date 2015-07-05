@@ -11,33 +11,32 @@ import test.scala._
 
 @RunWith(classOf[JUnitRunner])
 class PhasesSuite extends FlatSpec with Matchers {
-  class Outer(val blah: Int)
+  @phases.declare(Meteoroid -> Meteor, Meteor -> Meteorite)
+  class Astrolith(composition: String, @Meteoroid orbitalVelocity_km_s: Double, @Meteor impactDate_ts: Long, @Meteorite massOfRemnant_kg: Double) {
+    def composition_symb = composition.replace("nickel", "Ni").replace("iron", "Fe")
 
-  @phases.declare(Startup -> Run)
-  class Engine(always: Int, @Startup config: String, @Run data: Int, blah: Int) extends Outer(blah + 1) {
-    val myAlways = always
+    @Meteoroid
+    def orbitalVelocity_mi_h = 2236.93 * orbitalVelocity_km_s
 
-    @Startup @Run
-    val myAlways2 = always
+    @Meteor
+    def impactDate_year = impactDate_ts / (365L * 24L * 60L * 60L * 1000L) + 1970
 
-    @Startup
-    val myConfig = config
-
-    @Run
-    val myData: Int = data
-
-    @Run
-    def whatsMyData(query: String): Int = myData
-
-    // class Startup extends Engine(always, config, data)
-    // class Run extends Engine(always, config, data)
+    @Meteorite
+    def massOfRemnant_lb = 2.2046 * massOfRemnant_kg
   }
 
   "test" must "do something" in {
-    // val engine = new Engine.Startup
-    val engine = new Engine(12, 8)
-    // println(engine.myConfig)
-    // println(engine.myData)
-    // println(engine.whatsMyData("hey"))
+    val peekskill_astrolith = new Astrolith("nickel-iron")
+    peekskill_astrolith.composition_symb should be ("Ni-Fe")
+
+    val peekskill_meteoroid = new peekskill_astrolith.Meteoroid("nickel-iron", 14.0)
+    peekskill_meteoroid.orbitalVelocity_mi_h should be (31317.02 +- 0.01)
+
+    val peekskill_meteor = new peekskill_astrolith.Meteor("nickel-iron", 718674480000L)
+    peekskill_meteor.impactDate_year should be (1992)
+
+    val peekskill_meteorite = new peekskill_astrolith.Meteorite("nickel-iron", 12.4)
+    peekskill_meteorite.massOfRemnant_lb should be (27.33704 +- 0.00001)
+
   }
 }
