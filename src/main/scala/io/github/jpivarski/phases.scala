@@ -31,10 +31,10 @@ package object phases {
             val from = x.toString
             val to = z.toString
             if (from == to)
-              c.error(c.enclosingPosition, "@phases.declare transition must point to two distinct states, not " + from + " -> " + to)
+              c.error(c.enclosingPosition, "@phases.declare transition must go between two distinct states, not " + from + " -> " + to)
             (from, to)
           case _ =>
-            c.error(c.enclosingPosition, "@phases.declare arguments must have the form STATE1 -> STATE2")
+            c.error(c.enclosingPosition, "@phases.declare arguments must have the form State1 -> State2")
             throw new Error
         }
       }
@@ -42,6 +42,38 @@ package object phases {
       c.error(c.enclosingPosition, "@phases.declare requires at least one transition")
 
     val phaseNames = (transitions.map(_._1) ++ transitions.map(_._2)).distinct
+
+    case class ClassParam(flags: FlagSet, privateWithin: Name, partitionedAnnotations: (List[Tree], List[Tree]), paramName: TermName, tpt: Tree, rhs: Tree) {
+      def has(phase: String) = (partitionedAnnotations._1.isEmpty)  ||  (partitionedAnnotations._1 exists {
+        case Apply(Select(New(x), _), Nil) if (phase == x.toString) => true
+        case _ => false
+      })
+      def toParameter = ValDef(Modifiers(flags, privateWithin, partitionedAnnotations._2), paramName, tpt, rhs)
+      def toArgument = Ident(paramName)
+    }
+
+    val classParams = {
+      val ClassDef(_, _, _, Template(_, _, body)) = classDef
+      body collect {case DefDef(_, methodName, _, vparamss, _, _) if (methodName.toString == "<init>") =>
+        vparamss flatMap {_ collect {case ValDef(mods, paramName, tpt, rhs) =>
+          ClassParam(
+            mods.flags,
+            mods.privateWithin,
+            mods.annotations partition {
+              case Apply(Select(New(x), _), Nil) if (phaseNames contains x.toString) => true
+              case _ => false
+            },
+            paramName,
+            tpt,
+            rhs)
+        }}} flatten
+    }
+
+    def makeTransitionMethod(from: String, to: String): Tree = {
+      val methodArgs = classParams filter {x => x.has(to)  &&  !x.has(from)} map {_.toParameter}
+      val constructorArgs = classParams filter {x => x.has(to)} map {_.toArgument}
+      DefDef(Modifiers(), newTermName("to" + to), List(), List(methodArgs), TypeTree(), Apply(Select(New(Select(Ident(newTermName(className.toString)), newTypeName(to))), nme.CONSTRUCTOR), constructorArgs))
+    }
 
     class ClassDefFilterer(phaseToKeep: Option[String]) extends Transformer {
       val getPhases = {
@@ -75,15 +107,17 @@ package object phases {
 
       override def transform(tree: Tree): Tree = tree match {
         case ClassDef(mods, name, tparams, Template(parents, self, body)) =>
-          // basic transform
-          val transformedBody = body map {transform(_)} filter {_ != EmptyTree}
+          val basicTransform = body map {transform(_)} filter {_ != EmptyTree}
 
-          // constructor code other than specialized val/def declarations should only be in the general class
-          val transformedBody2 =
-            if (phaseToKeep != None)
-              transformedBody collect {case x: ValDef => x; case x: DefDef => x}
-            else
-              transformedBody
+          val transformedBody = phaseToKeep match {
+            case Some(phase) =>
+              val transitionMethods = transitions filter {_._1 == phase} map {case (from, to) => makeTransitionMethod(from, to)}
+              // drop everything but the field and methods declarations (to execute constructor code in superclass only once)
+              // and then add transition metods
+              (basicTransform collect {case x: ValDef => x; case x: DefDef => x}) ++ transitionMethods
+            case None =>
+              basicTransform
+          }
 
           ClassDef(
             transformModifiers(mods),
@@ -95,9 +129,9 @@ package object phases {
             Template(phaseToKeep match {
               case None => parents
               case Some(phase) => List(Ident(name))
-            }, transformValDef(self), transformedBody2))
+            }, transformValDef(self), transformedBody))
 
-        case x: ValDef => transformValDef(x, phaseToKeep == None, phaseToKeep != None)
+        case x: ValDef => transformValDef(x, true, phaseToKeep != None)
 
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
           val phases = mods.annotations collect getPhases
@@ -137,6 +171,7 @@ package object phases {
       ModuleDef(mods, name, Template(parents, self, body ++ phaseDefs))
     }
 
+    println(superclassDef)
     println(companionWithSubclasses)
 
     c.Expr[Any](Block(List(superclassDef, companionWithSubclasses), Literal(Constant(()))))

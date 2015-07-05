@@ -46,6 +46,23 @@ class PhasesSuite extends FlatSpec with Matchers {
     peekskill_meteorite.massOfRemnant_kg should be (12.4 +- 0.1)
     peekskill_meteorite.massOfRemnant_kg *= 0.95   // erosion
     peekskill_meteorite.massOfRemnant_lb should be (25.970188 +- 0.000001)
+  }
 
+  it must "work for transitions" in {
+    val peekskill_meteoroid = new Astrolith.Meteoroid("nickel-iron", 14.0)
+    peekskill_meteoroid.composition_symb should be ("Ni-Fe")
+    peekskill_meteoroid.orbitalVelocity_mi_h should be (31317.02 +- 0.01)
+
+    val peekskill_meteor = peekskill_meteoroid.toMeteor(718674480000L)
+    peekskill_meteor.composition_symb should be ("Ni-Fe")
+    peekskill_meteor.impactDate_year should be (1992)
+    peekskill_meteor.impactDate_ts should be (718674480000L)
+
+    val peekskill_meteorite = peekskill_meteor.toMeteorite(12.4)
+    peekskill_meteorite.composition_symb should be ("Ni-Fe")
+    peekskill_meteorite.massOfRemnant_lb should be (27.33704 +- 0.00001)
+    peekskill_meteorite.massOfRemnant_kg should be (12.4 +- 0.1)
+    peekskill_meteorite.massOfRemnant_kg *= 0.95   // erosion
+    peekskill_meteorite.massOfRemnant_lb should be (25.970188 +- 0.000001)
   }
 }
