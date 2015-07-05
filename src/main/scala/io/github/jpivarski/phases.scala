@@ -83,12 +83,12 @@ package object phases {
 
           phaseToKeep match {
             case None =>
-              if (phases.isEmpty)
+              if (name.toString == "<init>"  ||  phases.isEmpty)
                 modified
               else
                 EmptyTree
             case Some(phase) =>
-              if (phases contains phase)
+              if (name.toString == "<init>"  ||  phases.contains(phase))
                 modified
               else
                 EmptyTree
@@ -99,6 +99,15 @@ package object phases {
     }
 
     val superclassDef = (new ClassDefFilterer(None)).transform(classDef)
+
+    println(superclassDef)
+    println()
+
+    val phaseDefs = phaseNames foreach {n =>
+      println(n)
+      println((new ClassDefFilterer(Some(n))).transform(classDef))
+      println()
+    }
 
     c.Expr[Any](Block(List(superclassDef), Literal(Constant(()))))
   }
