@@ -45,7 +45,7 @@ package object phases {
         case Apply(Select(New(x), _), Nil) if (phaseNames contains x.toString) => x.toString
       }: PartialFunction[Tree, String]
 
-      override def transform(tree: Tree): Tree = tree match {
+      def transform(tree: Tree, isInit: Boolean): Tree = tree match {
         case ValDef(mods, name, tpt, rhs) =>
           val phases = mods.annotations collect getPhases
           val otherAnnotations = mods.annotations filter {!getPhases.isDefinedAt(_)}
@@ -56,17 +56,12 @@ package object phases {
             transform(tpt),
             transform(rhs))
 
+          val allPhases = (phases.isEmpty  ||  phases.size == phaseNames.size)
           phaseToKeep match {
-            case None =>
-              if (phases.isEmpty)
-                modified
-              else
-                EmptyTree
-            case Some(phase) =>
-              if (phases contains phase)
-                modified
-              else
-                EmptyTree
+            case None if (allPhases) => modified
+            case Some(phase) if (isInit  &&  (allPhases  ||  phases.contains(phase))) => modified
+            case Some(phase) if (!isInit  &&  !allPhases  &&  phases.contains(phase)) => modified
+            case _ => EmptyTree
           }
 
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
@@ -77,25 +72,21 @@ package object phases {
             transformModifiers(Modifiers(mods.flags, mods.privateWithin, otherAnnotations)),
             name,
             transformTypeDefs(tparams),
-            vparamss map {_ map {x => transform(x)} collect {case y: ValDef => y}},
+            vparamss map {_ map {x => transform(x, name.toString == "<init>")} collect {case y: ValDef => y}},
             transform(tpt),
             transform(rhs))
 
+          val allPhases = (phases.isEmpty  ||  phases.size == phaseNames.size)
           phaseToKeep match {
-            case None =>
-              if (name.toString == "<init>"  ||  phases.isEmpty)
-                modified
-              else
-                EmptyTree
-            case Some(phase) =>
-              if (name.toString == "<init>"  ||  phases.contains(phase))
-                modified
-              else
-                EmptyTree
+            case None if (allPhases) => modified
+            case Some(phase) if (name.toString == "<init>"  &&  (allPhases  ||  phases.contains(phase))) => modified
+            case _ => EmptyTree
           }
 
         case _ => super.transform(tree)
       }
+
+      override def transform(tree: Tree): Tree = transform(tree, false)
     }
 
     val superclassDef = (new ClassDefFilterer(None)).transform(classDef)
