@@ -7,9 +7,27 @@ import scala.annotation.StaticAnnotation
 
 package object phases {
   // only one annotation/macro in this package: "declare"; the rest are fake (syntax-only) annotations that get removed before compilation
-
-  class declare extends StaticAnnotation {
+  class declare(transitions: Tuple2[Phase, Phase]*)(debug: Boolean = false) extends StaticAnnotation {
     def macroTransform(annottees: Any*): Any = macro declare_impl
+  }
+
+  // ... but in some contexts (the console, for instance), the interpreter/compiler tries to resolve all annotations to real, existing classes before evaluating declare, so we need to give the user a way to assign dummy indexes
+  class Phase extends StaticAnnotation {
+    def macroTransform(annottees: Any*): Any = macro Phase.impl
+  }
+  object Phase {
+    def apply() = new Phase
+    def impl(c: Context)(annottees: c.Expr[Any]*): c.Expr[Any] = {
+      // applies to anything and does nothing
+      import c.universe._
+      val expandees =
+        annottees.map(_.tree).toList match {
+          case (_: ValDef) :: (rest @ (_ :: _)) => rest
+          case (_: TypeDef) :: (rest @ (_ :: _)) => rest
+          case x => x
+        }
+      c.Expr[Any](Block(expandees, Literal(Constant(()))))
+    }
   }
 
   def declare_impl(c: Context)(annottees: c.Expr[Any]*): c.Expr[Any] = {
@@ -31,22 +49,32 @@ package object phases {
     val companionObjectDef = companionPair.collect({case x: ModuleDef => x}).
       headOption.getOrElse(q"object ${newTermName(className.toString)}")
 
+    // extracting constructor arguments is a little tricky because all we have is the AST, not their evaluated values
+    val Apply(_, lastArgsList) = c.prefix.tree
+    val penultimateArgsList = c.prefix.tree collect {
+      case Apply(Apply(_, x), _) => x
+    } flatten
+
+    // determine if the user wants to debug their code (view the expanded form on the terminal during compilation)
+    val debugAsNamedArg = lastArgsList.collect({
+      case AssignOrNamedArg(Ident(x), Literal(Constant(y: java.lang.Boolean))) if (x.toString == "debug") =>
+        y.booleanValue
+    }).headOption
+    val debugAsFirstArg = lastArgsList.headOption.collect({
+      case Literal(Constant(y: java.lang.Boolean)) => y.booleanValue
+    })
+    val debug = debugAsNamedArg.getOrElse(debugAsFirstArg.getOrElse(false))
+
     // walk through the annotation's arguments to find the transitions
     // they should have the form State1 -> State2 and always go between distinct states (no reflexive)
-    val transitions =
-      c.prefix.tree match {
-        case Apply(_, args) => args map {
-          case Apply(Select(x, y), z :: Nil) if (y.toString == "$minus$greater") =>
-            val from = x.toString
-            val to = z.toString
-            if (from == to)
-              c.error(c.enclosingPosition, "@phases.declare transition must go between two distinct states, not " + from + " -> " + to)
-            (from, to)
-          case _ =>
-            c.error(c.enclosingPosition, "@phases.declare arguments must have the form State1 -> State2")
-            throw new Error
-        }
-      }
+    val transitions = lastArgsList ++ penultimateArgsList collect {
+      case Apply(Select(x, y), z :: Nil) if (y.toString == "$minus$greater") =>
+        val from = x.toString
+        val to = z.toString
+        if (from == to)
+          c.error(c.enclosingPosition, "@phases.declare transition must go between two distinct states, not " + from + " -> " + to)
+        (from, to)
+    }
     if (transitions.isEmpty)
       c.error(c.enclosingPosition, "@phases.declare requires at least one transition")
 
@@ -85,7 +113,13 @@ package object phases {
     def makeTransitionMethod(from: String, to: String): Tree = {
       val methodArgs = classParams filter {x => x.has(to)  &&  !x.has(from)} map {_.toParameter}
       val constructorArgs = classParams filter {x => x.has(to)} map {_.toArgument}
-      DefDef(Modifiers(), newTermName("to" + to), List(), List(methodArgs), TypeTree(), Apply(Select(New(Select(Ident(newTermName(className.toString)), newTypeName(to))), nme.CONSTRUCTOR), constructorArgs))
+      DefDef(
+        Modifiers(),
+        newTermName("to" + to.head.toUpper + to.tail),
+        List(),
+        List(methodArgs),
+        TypeTree(),
+        Apply(Select(New(Select(Ident(newTermName(className.toString)), newTypeName(to))), nme.CONSTRUCTOR), constructorArgs))
     }
 
     // the main Transformer class for removing fake annotations and definitions that are (fake-)annotated for a subclass
@@ -202,9 +236,11 @@ package object phases {
       ModuleDef(mods, name, Template(parents, self, body ++ phaseDefs))
     }
 
-    // // optionally print out what we've done
-    // println(superclassDef)
-    // println(companionWithSubclasses)
+    // optionally print out what we've done
+    if (debug) {
+      println(show(superclassDef))
+      println(show(companionWithSubclasses))
+    }
 
     // and send it to the Scala compiler
     c.Expr[Any](Block(List(superclassDef, companionWithSubclasses), Literal(Constant(()))))
