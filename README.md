@@ -1,5 +1,8 @@
 # Phases
+## Scala macros for transitioning between states
 
-Macros for making classes that transition between states
+![alt tag](https://raw.githubusercontent.com/jpivarski/phases/master/moon_phases.jpg)
 
-**Warning:** macro updates are not applied unless you `mvn clean...`.
+Some description here
+
+**Warning:** macro updates are not applied unless you `mvn clean`.
