@@ -40,27 +40,81 @@ package object phases {
 
     val phaseNames = (transitions.map(_._1) ++ transitions.map(_._2)).distinct
 
-    println(classDef)
+    // println(classDef)
 
-    var superclassDef = classDef
+    class ClassDefFilterer(phaseToKeep: Option[String]) extends Transformer {
+      val getPhases = {
+        case Apply(Select(New(x), _), Nil) if (phaseNames contains x.toString) => x.toString
+      }: PartialFunction[Tree, String]
 
-    new Traverser {
-      override def traverse(tree: Tree): Unit = tree match {
-        case ValDef(mods, name, _, _) =>
-          val phases = mods.annotations collect {
-            case Apply(Select(New(x), _), Nil) if (phaseNames contains x.toString) => x.toString
+      override def transform(tree: Tree): Tree = tree match {
+        case ValDef(mods, name, tpt, rhs) =>
+          val phases = mods.annotations collect getPhases
+          val otherAnnotations = mods.annotations filter {!getPhases.isDefinedAt(_)}
+
+          val modified = ValDef(
+            transformModifiers(Modifiers(mods.flags, mods.privateWithin, otherAnnotations)),
+            name,
+            transform(tpt),
+            transform(rhs))
+
+          phaseToKeep match {
+            case None =>
+              if (phases.isEmpty)
+                modified
+              else
+                EmptyTree
+            case Some(phase) =>
+              if (phases contains phase)
+                modified
+              else
+                EmptyTree
           }
-          println(name, phases)
 
+        case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+          val phases = mods.annotations collect getPhases
+          val otherAnnotations = mods.annotations filter {!getPhases.isDefinedAt(_)}
+          
+          val modified = DefDef(
+            transformModifiers(Modifiers(mods.flags, mods.privateWithin, otherAnnotations)),
+            name,
+            transformTypeDefs(tparams),
+            vparamss map {_ map {case ValDef(m, n, t, r) => ValDef(transformModifiers(m), n, transform(t), transform(r))}},
+            transform(tpt),
+            transform(rhs))
 
-          super.traverse(tree)
-        case _ => super.traverse(tree)
+          phaseToKeep match {
+            case None =>
+              if (phases.isEmpty)
+                modified
+              else
+                EmptyTree
+            case Some(phase) =>
+              if (phases contains phase)
+                modified
+              else
+                EmptyTree
+          }
+
+        // case Template(x, ValDef(m, n, t, r), z) =>
+          // println(x.getClass.getName)
+          // println(x)
+          // println(y.getClass.getName)
+          // println(y)
+          // println(z.getClass.getName)
+          // println(z)
+          // println()
+          // Template(x map {transform(_)}, ValDef(m, n, transform(t), transform(r)), z map {transform(_)})
+
+        case _ => super.transform(tree)
       }
-    } traverse(classDef)
+    }
 
-    println(superclassDef)
+    val superclassDef = (new ClassDefFilterer(None)).transform(classDef)
+
+    // println(superclassDef)
     
-    c.Expr[Any](Block(List(classDef), Literal(Constant(()))))
+    c.Expr[Any](Block(List(superclassDef), Literal(Constant(()))))
   }
 
   // def transition(from: Any, to: Any) = macro transition_impl

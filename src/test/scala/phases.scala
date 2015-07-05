@@ -12,7 +12,7 @@ import test.scala._
 @RunWith(classOf[JUnitRunner])
 class PhasesSuite extends FlatSpec with Matchers {
   @phases.declare(Startup -> Run)
-  class Engine(always: Int, @Startup config: String, @Run data: Int) {
+  class Engine(always: Int, @Startup config: String, @Run data: Int, blah: Int) {
     val myAlways = always
 
     @Startup @Run
@@ -33,7 +33,7 @@ class PhasesSuite extends FlatSpec with Matchers {
 
   "test" must "do something" in {
     // val engine = new Engine.Startup
-    val engine = new Engine(12, "hello", 3)
+    val engine = new Engine(12, "hello", 3, 8)
     println(engine.myConfig)
     println(engine.myData)
     println(engine.whatsMyData("hey"))
