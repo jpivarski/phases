@@ -33,9 +33,9 @@ class PhasesSuite extends FlatSpec with Matchers {
 
   "test" must "do something" in {
     // val engine = new Engine.Startup
-    val engine = new Engine(12, "hello", 3, 8)
-    println(engine.myConfig)
-    println(engine.myData)
-    println(engine.whatsMyData("hey"))
+    val engine = new Engine(12, 8)
+    // println(engine.myConfig)
+    // println(engine.myData)
+    // println(engine.whatsMyData("hey"))
   }
 }

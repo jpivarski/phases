@@ -40,8 +40,6 @@ package object phases {
 
     val phaseNames = (transitions.map(_._1) ++ transitions.map(_._2)).distinct
 
-    // println(classDef)
-
     class ClassDefFilterer(phaseToKeep: Option[String]) extends Transformer {
       val getPhases = {
         case Apply(Select(New(x), _), Nil) if (phaseNames contains x.toString) => x.toString
@@ -79,7 +77,7 @@ package object phases {
             transformModifiers(Modifiers(mods.flags, mods.privateWithin, otherAnnotations)),
             name,
             transformTypeDefs(tparams),
-            vparamss map {_ map {case ValDef(m, n, t, r) => ValDef(transformModifiers(m), n, transform(t), transform(r))}},
+            vparamss map {_ map {x => transform(x)} collect {case y: ValDef => y}},
             transform(tpt),
             transform(rhs))
 
@@ -96,24 +94,12 @@ package object phases {
                 EmptyTree
           }
 
-        // case Template(x, ValDef(m, n, t, r), z) =>
-          // println(x.getClass.getName)
-          // println(x)
-          // println(y.getClass.getName)
-          // println(y)
-          // println(z.getClass.getName)
-          // println(z)
-          // println()
-          // Template(x map {transform(_)}, ValDef(m, n, transform(t), transform(r)), z map {transform(_)})
-
         case _ => super.transform(tree)
       }
     }
 
     val superclassDef = (new ClassDefFilterer(None)).transform(classDef)
 
-    // println(superclassDef)
-    
     c.Expr[Any](Block(List(superclassDef), Literal(Constant(()))))
   }
 
