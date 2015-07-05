@@ -1,5 +1,5 @@
 # Phases
-## Scala macros for transitioning between states
+## Scala macros for multiphase classes
 
 ![alt tag](https://raw.githubusercontent.com/jpivarski/phases/master/moon_phases.jpg)
 
