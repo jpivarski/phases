@@ -8,15 +8,18 @@ Immutable data is a good idea for many reasons, but it's often compromised in re
 
 These processes can be represented by immutable data, but objects need to be replaced when moving from one phase to the next.  We end up having to write code like
 
-    class DoohickeyInConfiguration(doohickeyParameters: T, configurationParameters: U) {
-      ...
+    class ConfigDuringInit(parameters) {
+      def setParameter(param: String, value: T): ConfigDuringInit
+      def getParameter(param: String): T
     }
 
-    class DoohickeyInInitialization(doohickeyParameters: T, initializationParameters: U) {
-      ...
+    class ConfigDuringExec(parameters) {
+      // can't change those parameters now!
+      def getParameter(param: String): T
     }
 
-with a lot of boilerplate to copy the unchanging bits of the `Doohickey` from one stage to the next.
+with a lot of boilerplate to copy the parts that don't change from one phase's representation to the next.
+
 
 HERE
 
