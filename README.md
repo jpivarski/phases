@@ -52,10 +52,10 @@ The `@phases.declare` annotation labels the class as one that may undergo phase 
 
 During compilation, this class definition is replaced with:
 
-   * superclass `Astrolith`, which only has a `composition`
-      * subclass `Astrolith.meteoroid`, which has a `composition`, an `orbitalVelocity`, and a `toMeteor` method
-      * subclass `Astrolith.meteor`, which has a `composition`, an `impactDate`, and a `toMeteorite` method
-      * subclass `Astrolith.meteorite`, which has a `composition` and a `massOfRemnant` (and no transition methods).
+   * class `Astrolith`, which only has a `composition` (all annotated members are removed)
+      * static subclass `Astrolith.meteoroid`, which has a `composition`, an `orbitalVelocity`, and a `toMeteor` method
+      * static subclass `Astrolith.meteor`, which has a `composition`, an `impactDate`, and a `toMeteorite` method
+      * static subclass `Astrolith.meteorite`, which has a `composition` and a `massOfRemnant` (and no transition methods).
 
 If desired, the generated classes can be printed out at compile time by adding
 
