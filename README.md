@@ -97,7 +97,7 @@ You can create any phase directly with a `new` operator.  Let's start with the i
 
     val peekskill_meteoroid = new Astrolith.meteoroid("nickel-iron", 14.0)
 
-and use the transition method to make a meteor and a meteoroid (in that order):
+and use the transition methods to make a meteor and a meteoroid (in that order):
 
     // already knows the composition, passes it on through the transition
     val peekskill_meteor = peekskill_meteoroid.toMeteor(718674480000L)  // 1992
@@ -117,7 +117,7 @@ Functions that require an `Astrolith` in any phase should reference the supercla
    * A configuration that is a mutable map before initialization and an immutable map afterward.
    * A wrapper around a `Vector.Builder` in the data-accumulation phase and a `Vector` in the storage and retrieval phase.
    * Avoiding `null` pointers before some fields can be initialized, or equivalently, avoiding the indirection of `Option[T]` forever after initialization.
-   * Optimization schemes that convert collections into Scala `Lists` when most operations are head-prepend/retrieval and Scala `Vectors` when most operations are random access.  There would be transitions between both states.
+   * Optimization schemes that convert collections into Scala `Lists` when most operations are head-prepend/retrieval and Scala `Vectors` when most operations are random access.  These transitions could go in both directions.
    * Many more; it seems to come up a lot.
 
 ### Installation
