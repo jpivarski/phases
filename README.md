@@ -86,14 +86,14 @@ We've seen that the phases can have different constructors, but they may need di
       def massOfRemnant_lb = 2.2046 * massOfRemnant_kg
     }
 
-You can create any state directly with a `new` operator.  Let's start with the initial state:
+You can create any phase directly with a `new` operator.  Let's start with the initial state:
 
     val peekskill_meteoroid = new Astrolith.meteoroid("nickel-iron", 14.0)
 
-and use the transition method to make a meteor and a meteoroid (must be in that order):
+and use the transition method to make a meteor and a meteoroid (in that order):
 
     // already knows the composition, passes it on through the transition
-    val peekskill_meteor = peekskill_meteoroid.toMeteor(718674480000L)
+    val peekskill_meteor = peekskill_meteoroid.toMeteor(718674480000L)  // 1992
     val peekskill_meteorite = peekskill_meteor.toMeteorite(12.4)
     println(peekskill_meteorite.composition_symb)
 
@@ -108,9 +108,10 @@ Functions that require an `Astrolith` in any phase should reference the supercla
 ### Realistic use-cases
 
    * A configuration that is a mutable map before initialization and an immutable map afterward.
-   * A wrapper around a list `Builder` in the data-accumulation phase and a list in the storage and retrieval phase.
+   * A wrapper around a `Vector.Builder` in the data-accumulation phase and a `Vector` in the storage and retrieval phase.
    * Avoiding `null` pointers before some fields can be initialized, or equivalently, avoiding the indirection of `Option[T]` forever after initialization.
    * Optimization schemes that convert collections into Scala `Lists` when most operations are head-prepend/retrieval and Scala `Vectors` when most operations are random access.  There would be transitions between both states.
+   * Many more; it seems to come up a lot.
 
 ### Installation
 
@@ -128,7 +129,7 @@ to `scala-maven-plugin` to actually use the macro.  If you think the macro isn't
 
 The macro cannot (currently!) be used in the Scala console, which is a shame, because that's a good place to test things like this.  You have to write your code in a build process that includes the above plugin.
 
-I'm [asking about deployment issues](http://stackoverflow.com/questions/31236360/how-do-i-distribute-a-scala-macro-as-a-project) now to try to streamline this process, so that it can be installed with a simple JAR dependency.  (When available, I'll put revisioned JARs in the appropriate place in GitHub.)
+I'm [asking about deployment issues](http://stackoverflow.com/questions/31236360/how-do-i-distribute-a-scala-macro-as-a-project) now to try to streamline this process, so that it can be installed with a simple JAR dependency.  (When available, I'll put revisioned JARs in the appropriate place in GitHub and full instructions here.)
 
 When I have a nice deployment strategy, I'll make both Scala 2.10 and Scala 2.11 versions available (always with the highest minor revision numbers).
 
