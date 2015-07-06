@@ -126,6 +126,8 @@ Currently, it appears to be necessary to add a
 
 to `scala-maven-plugin` to actually use the macro.  If you think the macro isn't doing anything, turn on `debug = true` to be sure (it should print blocks of code at compile-time).  See the `pom.xml` for this project as a guide.
 
+The macro cannot (currently!) be used in the Scala console, which is a shame, because that's a good place to test things like this.  You have to write your code in a build process that includes the above plugin.
+
 I'm [asking about deployment issues](http://stackoverflow.com/questions/31236360/how-do-i-distribute-a-scala-macro-as-a-project) now to try to streamline this process, so that it can be installed with a simple JAR dependency.  (When available, I'll put revisioned JARs in the appropriate place in GitHub.)
 
 When I have a nice deployment strategy, I'll make both Scala 2.10 and Scala 2.11 versions available (always with the highest minor revision numbers).
