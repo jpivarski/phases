@@ -37,9 +37,9 @@ with a lot of boilerplate to copy the parts that don't change from one phase's r
       def getParameter(param: String): T
     }
 
-After all, it's conceptually one object, so why shouldn't it be represented by one class?  Moreover, some functions that accept a `Config` shouldn't care which phase it's in.  To do things the Right Way, we'd have to set up a class hierarchy or set of interfaces, which is yet more boilerplate.
+After all, it's conceptually one object, so why shouldn't it be represented by one class?  Moreover, some functions that accept a `Config` shouldn't care which phase it's in.  To do things The Right Way, we'd have to set up a class hierarchy or set of interfaces, which is yet more boilerplate.
 
-This library builds hierarchies of classes to represent one object as it passes through the phases of a state diagram.  You, the user, write one class definition with annotations to indicate which parts of the class are timeless and which are associated with one or several phases.  The macro generates the classes, the transitions, and the type relationships.
+This library builds hierarchies of classes to represent one conceptual object as it passes through the phases of a state diagram.  You, the user, write one class definition with annotations to indicate which parts of the class are timeless and which are associated with one or several phases.  The macro generates the classes, the transitions, and the type relationships.
 
 The idea for this project was inspired by [Beamer](https://bitbucket.org/rivanvx/beamer/wiki/Home), a LaTeX package for making slide presentations.  It has a [neat syntax](http://www.texdev.net/2014/01/17/the-beamer-slide-overlay-concept/) for creating sequences in which most of the data on two successive slides stays the same, while the important part changes.
 
