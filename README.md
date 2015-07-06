@@ -25,7 +25,7 @@ Staged processes can certainly be represented by immutable data, but objects mus
       def getParameter(param: String): T
     }
 
-with a lot of boilerplate to copy the parts that don't change from one phase's representation to the next.  It's tempting to just write
+with a lot of boilerplate to copy the parts that don't change from one phase's representation to the next.  It's tempting to just write the following with a mutable `var phase`:
 
     class Config(var phase: P, parameters: T*) {
       def setParameter(param: String, value: T): Config =
