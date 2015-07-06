@@ -55,7 +55,7 @@ Suppose we want to model astroliths ("space rocks") which are called "meteorites
                     @meteor impactDate: Long,
                     @meteorite massOfRemnant: Double)
 
-The `@phases.declare` annotation labels the class as one that may undergo phase transitions, and `@meteoroid`, `@meteor`, `@meteorite` are the phases.  There are only two transitions among the three phases: meteorites cannot become meteoroids (not easily, at least).  In general, any finite state diagram could be represented.
+The `@phases.declare` annotation labels the class as one that may undergo phase transitions, and `@meteoroid`, `@meteor`, `@meteorite` are the phases.  There are only two transitions among the three phases: meteorites cannot become meteoroids (not easily, at least).  In general, any [finite state diagram](https://en.wikipedia.org/wiki/State_diagram) could be represented.
 
 During compilation, this class definition is replaced with:
 
