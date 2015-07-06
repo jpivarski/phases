@@ -53,9 +53,9 @@ The `@phases.declare` annotation labels the class as one that may undergo phase 
 During compilation, this class definition is replaced with:
 
    * class `Astrolith`, which only has a `composition` (all annotated members are removed)
-      * static subclass `Astrolith.meteoroid`, which has a `composition`, an `orbitalVelocity`, and a `toMeteor` method
-      * static subclass `Astrolith.meteor`, which has a `composition`, an `impactDate`, and a `toMeteorite` method
-      * static subclass `Astrolith.meteorite`, which has a `composition` and a `massOfRemnant` (and no transition methods).
+      * static subclass `Astrolith.meteoroid` with constructor signature `(composition: String, orbitalVelocity: Double)` and a `toMeteor` method
+      * static subclass `Astrolith.meteor`, with constructor signature `(composition: String, impactDate: Long)` and a `toMeteorite` method
+      * static subclass `Astrolith.meteorite`, with constructor signature `(composition: String, massOfRemnant: Double)` and _no_ transition methods.
 
 If desired, the definitions generated classes can be printed out at compile time by adding `(debug = true)` to the end of the annotation:
 
@@ -63,7 +63,7 @@ If desired, the definitions generated classes can be printed out at compile time
 
 This can make it easier to understand certain compilation errors downstream.
 
-Since the different phases have different constructors, they may need different contents and methods, too.  The same annotations apply:
+We've seen that the phases can have different constructors, but they may need different contents and methods, too.  The same annotations apply:
 
     @phases.declare(meteoroid -> meteor, meteor -> meteorite)
     class Astrolith(composition: String,
