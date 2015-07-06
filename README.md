@@ -57,11 +57,11 @@ During compilation, this class definition is replaced with:
       * static subclass `Astrolith.meteor`, which has a `composition`, an `impactDate`, and a `toMeteorite` method
       * static subclass `Astrolith.meteorite`, which has a `composition` and a `massOfRemnant` (and no transition methods).
 
-If desired, the generated classes can be printed out at compile time by adding
+If desired, the definitions generated classes can be printed out at compile time by adding `(debug = true)` to the end of the annotation:
 
     @phases.declare(meteoroid -> meteor, meteor -> meteorite)(debug = true)
 
-to the annotation.  It's a good way to resolve compilation errors downstream.
+This can make it easier to understand certain compilation errors downstream.
 
 Since the different phases have different constructors, they may need different contents and methods, too.  The same annotations apply:
 
