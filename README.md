@@ -53,8 +53,8 @@ The `@phases.declare` annotation labels the class as one that may undergo phase 
 During compilation, this class definition is replaced with:
 
    * superclass `Astrolith`, which only has a `composition`
-      * subclass `Astrolith.meteoroid`, which has a `composition`, an `orbitalVelocity`, and a `toMeteor` function
-      * subclass `Astrolith.meteor`, which has a `composition`, an `impactDate`, and a `toMeteorite` function
+      * subclass `Astrolith.meteoroid`, which has a `composition`, an `orbitalVelocity`, and a `toMeteor` method
+      * subclass `Astrolith.meteor`, which has a `composition`, an `impactDate`, and a `toMeteorite` method
       * subclass `Astrolith.meteorite`, which has a `composition` and a `massOfRemnant`
 
 If desired, the generated classes can be printed out at compile time by adding
@@ -90,7 +90,7 @@ You can create any state directly with a `new` operator.  Let's start with the i
 
     val peekskill_meteoroid = new Astrolith.meteoroid("nickel-iron", 14.0)
 
-and use the transition function to make a meteor and a meteoroid (must be in that order):
+and use the transition method to make a meteor and a meteoroid (must be in that order):
 
     // already knows the composition, passes it on through the transition
     val peekskill_meteor = peekskill_meteoroid.toMeteor(718674480000L)
