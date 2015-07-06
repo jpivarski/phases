@@ -48,7 +48,7 @@ Suppose we want to model astroliths ("space rocks") which are called "meteorites
                     @meteor impactDate: Long,
                     @meteorite massOfRemnant: Double)
 
-The `@phases.declare` annotation labels the class as one that may undergo phase transitions, and the `@meteoroid`, `@meteor`, `@meteorite` are the phases.  There are only two transitions among the three phases: meteorites cannot become meteoroids (not easily, at least).  In general, any finite state diagram could be represented.
+The `@phases.declare` annotation labels the class as one that may undergo phase transitions, and `@meteoroid`, `@meteor`, `@meteorite` are the phases.  There are only two transitions among the three phases: meteorites cannot become meteoroids (not easily, at least).  In general, any finite state diagram could be represented.
 
 During compilation, this class definition is replaced with:
 
@@ -61,9 +61,9 @@ If desired, the generated classes can be printed out at compile time by adding
 
     @phases.declare(meteoroid -> meteor, meteor -> meteorite)(debug = true)
 
-to the annotation.
+to the annotation.  It's a good way to resolve compilation errors downstream.
 
-Since the different phases have different constructors, they may need different contents and methods, too.  This example comes from the unit tests:
+Since the different phases have different constructors, they may need different contents and methods, too.  The same annotations apply:
 
     @phases.declare(meteoroid -> meteor, meteor -> meteorite)
     class Astrolith(composition: String,
@@ -71,30 +71,31 @@ Since the different phases have different constructors, they may need different 
                     @meteor val impactDate_ts: Long,            // works with val
                     @meteorite var massOfRemnant_kg: Double     // works with var
                    ) {
-      println("constructing " + this.getClass.getName)  // only once per object
+      println("constructing " + this.getClass.getName)
 
       // defined for all phases
       def composition_symb = composition.replace("nickel", "Ni").replace("iron", "Fe")
 
-      @meteoroid  // only one phase
+      @meteoroid  // defined in only one phase
       def orbitalVelocity_mi_h = 2236.93 * orbitalVelocity_km_s
 
-      @meteor     // only one phase
+      @meteor     // defined in only one phase
       def impactDate_year = impactDate_ts / (365L * 24L * 60L * 60L * 1000L) + 1970
 
-      @meteorite  // only one phase
+      @meteorite  // defined in only one phase
       def massOfRemnant_lb = 2.2046 * massOfRemnant_kg
     }
 
-You can create any state directly, but let's start with the initial state:
+You can create any state directly with a `new` operator.  Let's start with the initial state:
 
     val peekskill_meteoroid = new Astrolith.meteoroid("nickel-iron", 14.0)
 
-and use the transition function to make a meteor and a meteoroid:
+and use the transition function to make a meteor and a meteoroid (must be in that order):
 
-    // already knows the composition, passes this on through the transition
+    // already knows the composition, passes it on through the transition
     val peekskill_meteor = peekskill_meteoroid.toMeteor(718674480000L)
     val peekskill_meteorite = peekskill_meteor.toMeteorite(12.4)
+    println(peekskill_meteorite.composition_symb)
 
 Functions that require an `Astrolith` in any phase should reference the superclass type:
 
@@ -106,12 +107,27 @@ Functions that require an `Astrolith` in any phase should reference the supercla
 
 ### Realistic use-cases
 
+   * A configuration that is a mutable map before initialization and an immutable map afterward.
+   * A wrapper around a list `Builder` in the data-accumulation phase and a list in the storage and retrieval phase.
+   * Avoiding `null` pointers before some fields can be initialized, or equivalently, avoiding the indirection of `Option[T]` forever after initialization.
+   * Optimization schemes that convert collections into Scala `Lists` when most operations are head-prepend/retrieval and Scala `Vectors` when most operations are random access.  There would be transitions between both states.
 
+### Installation
 
+Currently, it appears to be necessary to add a
 
+    <compilerPlugins>
+      <compilerPlugin>
+        <groupId>org.scalamacros</groupId>
+        <artifactId>paradise_2.10.5</artifactId>
+        <version>2.1.0-M5</version>
+      </compilerPlugin>
+    </compilerPlugins>
 
+to `scala-maven-plugin` to actually use the macro.  If you think the macro isn't doing anything, turn on `debug = true` to be sure (it should print blocks of code at compile-time).  See the `pom.xml` for this project as a guide.
 
+I'm [asking about deployment issues](http://stackoverflow.com/questions/31236360/how-do-i-distribute-a-scala-macro-as-a-project) now to try to streamline this process, so that it can be installed with a simple JAR dependency.  (When available, I'll put revisioned JARs in the appropriate place in GitHub.)
 
-### HERE
+When I have a nice deployment strategy, I'll make both Scala 2.10 and Scala 2.11 versions available (always with the highest minor revision numbers).
 
-**Warning:** macro updates are not applied unless you `mvn clean`.
+Note that you must `mvn clean` between compilations if you make any changes to your annotated classes or the macro itself.  This is not a Zinc issue and is not resolved by changing `<recompileMode>incremental</recompileMode>` to `all`.
