@@ -122,22 +122,18 @@ Functions that require an `Astrolith` in any phase should reference the supercla
 
 ### Installation
 
-Currently, it appears to be necessary to add a
+Since macros modify the compile behavior of Scala, using this package is a little more complicated than just dropping in a dependency.  The installation instructions below assume that you are using Maven, but the equivalent is possible (and probably easier) in SBT.
+
+Two things are required to use the macros: the `phases` jar and the `paradise` Scala compiler plugin.  The `minimal_example` directory shows a complete minimal example.  The `phases` jar is taken from a file-based Maven repository and the `paradise` plugin is included in the Scala part of the `pom.xml`, like this:
 
     <compilerPlugins>
       <compilerPlugin>
         <groupId>org.scalamacros</groupId>
-        <artifactId>paradise_2.10.5</artifactId>
+        <artifactId>paradise_${scala.version}</artifactId>
         <version>2.1.0-M5</version>
       </compilerPlugin>
     </compilerPlugins>
 
-to `scala-maven-plugin` to actually use the macro.  If you think the macro isn't doing anything, turn on `debug = true` to be sure (it should print blocks of code at compile-time).  See the `pom.xml` for this project as a guide.
+The `minimal_example` supports Scala version 2.10.5 (the last in the 2.10 series) and 2.11.7 (currently the latest in the 2.11 series).  The `phases` jar will likely work for all Scala versions with the same major and minor version number (that is, 2.10.* and 2.11.*) but the `paradise` plugin is specific to the exact bug-fix number.  Fortunately, `paradise` plugins are maintained by http://scalamacros.org/ for all Scala versions.
 
-The macro cannot (currently!) be used in the Scala console, which is a shame, because that's a good place to test things like this.  You have to write your code in a build process that includes the above plugin.
-
-I'm [asking about deployment issues](http://stackoverflow.com/questions/31236360/how-do-i-distribute-a-scala-macro-as-a-project) now to try to streamline this process, so that it can be installed with a simple JAR dependency.  (When available, I'll put revisioned JARs in the appropriate place in GitHub and full instructions here.)
-
-When I have a nice deployment strategy, I'll make both Scala 2.10 and Scala 2.11 versions available (always with the highest minor revision numbers).
-
-Note that you must `mvn clean` between compilations if you make any changes to your annotated classes or the macro itself.  This is not a Zinc issue and is not resolved by changing `<recompileMode>incremental</recompileMode>` to `all`.
+If you want to change the `phases` macro itself, edit `project_2.10.5` or `project_2.11.7` accordingly.  Note that you must `mvn clean` each time you want to see a change in the macro take effect: incremental compilation ignores updates to the macro.
