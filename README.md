@@ -134,6 +134,8 @@ Two things are required to use the macros: the `phases` jar and the `paradise` S
       </compilerPlugin>
     </compilerPlugins>
 
+If you leave out the `paradise` plugin in Scala 2.10, the macro silently fails to operate.  Scala 2.11 gives you an appropriate error message.
+
 The `minimal_example` supports Scala version 2.10.5 (the last in the 2.10 series) and 2.11.7 (currently the latest in the 2.11 series).  The `phases` jar will likely work for all Scala versions with the same major and minor version number (that is, 2.10.* and 2.11.*) but the `paradise` plugin is specific to the exact bug-fix number.  Fortunately, `paradise` plugins are maintained by http://scalamacros.org/ for all Scala versions.
 
 If you want to change the `phases` macro itself, edit `project_2.10.5` or `project_2.11.7` accordingly.  Note that you must `mvn clean` each time you want to see a change in the macro take effect: incremental compilation ignores updates to the macro.
