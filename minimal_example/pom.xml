@@ -5,44 +5,29 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.github.jpivarski</groupId>
-  <artifactId>phases</artifactId>
-  <version>0.3</version>
+  <artifactId>phases-example</artifactId>
+  <version>NONE</version>
   <packaging>jar</packaging>
+
+  <properties>
+    <scala.version>2.10.5</scala.version>
+    <!-- <scala.version>2.11.7</scala.version> -->
+  </properties>
 
   <dependencies>
     <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-library</artifactId>
-      <version>2.10.5</version>
+      <groupId>io.github.jpivarski</groupId>
+      <artifactId>phases_${scala.version}</artifactId>
+      <version>0.3</version>
     </dependency>
-
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-reflect</artifactId>
-      <version>2.10.5</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.scalamacros</groupId>
-      <artifactId>quasiquotes_2.10</artifactId>
-      <version>2.1.0-M5</version>
-    </dependency>
-
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.11</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_2.10</artifactId>
-      <version>2.0.M6-SNAP36</version>
-      <scope>test</scope>
-    </dependency>
-
   </dependencies>
+
+  <repositories>
+    <repository>
+      <id>localrepo</id>
+      <url>file:localrepo</url>
+    </repository>
+  </repositories>
 
   <build>
     <plugins>
@@ -51,16 +36,10 @@
         <artifactId>scala-maven-plugin</artifactId>
         <version>3.2.1</version>
         <configuration>
-          <args>
-            <arg>-deprecation</arg>
-            <arg>-feature</arg>
-          </args>
-          <recompileMode>incremental</recompileMode>
-          <useZincServer>true</useZincServer>
           <compilerPlugins>
             <compilerPlugin>
               <groupId>org.scalamacros</groupId>
-              <artifactId>paradise_2.10.5</artifactId>
+              <artifactId>paradise_${scala.version}</artifactId>
               <version>2.1.0-M5</version>
             </compilerPlugin>
           </compilerPlugins>
@@ -69,28 +48,24 @@
           <execution>
             <goals>
               <goal>compile</goal>
-              <goal>testCompile</goal>
             </goals>
           </execution>
         </executions>
       </plugin>
 
       <plugin>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-maven-plugin</artifactId>
-        <version>1.0-RC2</version>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.4</version>
         <configuration>
-          <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-          <junitxml>.</junitxml>
+          <archive>
+            <manifest>
+              <mainClass>Main</mainClass>
+              <addClasspath>true</addClasspath>
+              <classpathPrefix>./lib</classpathPrefix>
+            </manifest>
+          </archive>
         </configuration>
-        <executions>
-          <execution>
-            <id>test</id>
-            <goals>
-              <goal>test</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
 
       <plugin>
